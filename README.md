@@ -2,7 +2,7 @@
 
 * Factory Patterns
 * The Repository Patterns
-* The SIngleton Pattern
+* The Singleton Pattern
 * Builder Pattern & Fluent Interface
 * Adapter Pattern
 * The Decorator Pattern
