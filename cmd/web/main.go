@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -10,11 +12,21 @@ import (
 const port = ":4000"
 
 type application struct {
+	templateMap map[string]*template.Template
+	config      appConfig
+}
+
+type appConfig struct {
+	useCache bool
 }
 
 func main() {
+	app := application{
+		templateMap: make(map[string]*template.Template),
+	}
 
-	app := application{}
+	flag.BoolVar(&app.config.useCache, "cache", true, "Use template cache")
+	flag.Parse()
 
 	fmt.Println("Starting server on port", port)
 
@@ -29,6 +41,6 @@ func main() {
 
 	err := srv.ListenAndServe()
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(err)
 	}
 }
