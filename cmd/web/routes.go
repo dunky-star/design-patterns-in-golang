@@ -1,17 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
+	"time"
 )
+
+const handlerTimeout = 60 * time.Second
 
 func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Handle the request
-		fmt.Fprint(w, "Hello, this is the beginning!")
-	})
+	mux.HandleFunc("/", app.ShowHome)
 
-	return mux
+	return recoverMiddleware(timeoutMiddleware(mux, handlerTimeout))
 }
