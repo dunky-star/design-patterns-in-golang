@@ -9,7 +9,7 @@ func NewPet(species string) *models.Pet {
 		Breed:       "",
 		MinWeight:   0,
 		MaxWeight:   0,
-		Description: "MNo description entered yet",
+		Description: "no description entered yet",
 		LifeSpan:    0,
 	}
 	return &pet
