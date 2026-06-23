@@ -6,7 +6,13 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"time"
+
+	"go-breeders/internal/driver"
+	"go-breeders/internal/models"
+
+	"github.com/joho/godotenv"
 )
 
 const port = ":4000"
@@ -14,19 +20,35 @@ const port = ":4000"
 type application struct {
 	templateMap map[string]*template.Template
 	config      appConfig
+	DB          models.DBModel
 }
 
 type appConfig struct {
 	useCache bool
+	db       struct {
+		dsn string
+	}
 }
 
 func main() {
+	// Load .env file into environment (no-op if file missing)
+	_ = godotenv.Load()
+
 	app := application{
 		templateMap: make(map[string]*template.Template),
 	}
 
 	flag.BoolVar(&app.config.useCache, "cache", false, "Use template cache")
+	flag.StringVar(&app.config.db.dsn, "dsn", os.Getenv("DSN"), "MySQL data source name")
 	flag.Parse()
+
+	conn, err := driver.OpenDB(app.config.db.dsn)
+	if err != nil {
+		log.Println(err)
+		log.Fatal(err)
+	}
+	defer conn.Close()
+	app.DB = models.DBModel{DB: conn}
 
 	fmt.Println("Starting server on port", port)
 
@@ -39,7 +61,7 @@ func main() {
 		ReadHeaderTimeout: 30 * time.Second,
 	}
 
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
