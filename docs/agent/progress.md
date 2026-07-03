@@ -8,7 +8,10 @@ Design Patterns in Go — implementations of creational, structural, and behavio
 
 ## Completed Features
 
-None yet.
+- Web server with stdlib `net/http`, middleware, templates, static assets
+- Factory and Abstract Factory patterns (`pets/`, test page, API routes)
+- Database connectivity via `internal/driver` and `.env` DSN
+- Dog breeds list: `internal/repository/dogs.go`, `GET /api/dog-breeds`, datatable on `/dog-breeds`
 
 ---
 
@@ -20,7 +23,7 @@ None currently.
 
 ## Backlog
 
-- Factory Pattern
+- Cat breeds list (still stub in go-breeders reference)
 - Repository Pattern
 - Singleton Pattern
 - Builder Pattern & Fluent Interface
@@ -30,5 +33,5 @@ None currently.
 
 ---
 
-**Last Updated:** May 30, 2026  
-**Status:** Starting
+**Last Updated:** July 2, 2026  
+**Status:** Dog breeds list implemented

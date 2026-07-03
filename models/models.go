@@ -8,7 +8,7 @@ type DogBreed struct {
 	WeightLowLbs     int    `json:"weight_low_lbs"`
 	WeightHighLbs    int    `json:"weight_high_lbs"`
 	AverageWeight    int    `json:"average_weight"`
-	LifeSpan         int    `json:"average_lifespan"`
+	Lifespan         int    `json:"average_lifespan"`
 	Details          string `json:"details"`
 	AlternateNames   string `json:"alternate_names"`
 	GeographicOrigin string `json:"geographic_origin"`

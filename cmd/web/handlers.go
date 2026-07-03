@@ -50,3 +50,14 @@ func (app *application) CreateCatFromAbstractFactory(w http.ResponseWriter, r *h
 	}
 	_ = k.WriteJSON(w, http.StatusOK, cat)
 }
+
+func (app *application) GetAllDogBreedsJSON(w http.ResponseWriter, r *http.Request) {
+	k := jsonxmltool.NewKit()
+	dogBreeds, err := app.DB.GetAllDogBreeds()
+	if err != nil {
+		_ = k.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	_ = k.WriteJSON(w, http.StatusOK, dogBreeds)
+}
