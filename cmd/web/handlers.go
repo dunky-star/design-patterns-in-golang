@@ -53,7 +53,7 @@ func (app *application) CreateCatFromAbstractFactory(w http.ResponseWriter, r *h
 
 func (app *application) GetAllDogBreedsJSON(w http.ResponseWriter, r *http.Request) {
 	k := jsonxmltool.NewKit()
-	dogBreeds, err := app.DB.GetAllDogBreeds()
+	dogBreeds, err := app.DB.AllDogBreeds()
 	if err != nil {
 		_ = k.ErrorJSON(w, err, http.StatusBadRequest)
 		return

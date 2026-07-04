@@ -1,0 +1,7 @@
+package repository
+
+import "go-breeders/models"
+
+func (m *testRepository) AllDogBreeds() ([]*models.DogBreed, error) {
+	return nil, nil
+}

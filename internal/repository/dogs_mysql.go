@@ -7,7 +7,7 @@ import (
 	"go-breeders/models"
 )
 
-func (r *Repository) GetAllDogBreeds() ([]*models.DogBreed, error) {
+func (m *mysqlRepository) AllDogBreeds() ([]*models.DogBreed, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -19,7 +19,7 @@ func (r *Repository) GetAllDogBreeds() ([]*models.DogBreed, error) {
 
 	var breeds []*models.DogBreed
 
-	rows, err := r.DB.QueryContext(ctx, query)
+	rows, err := m.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
