@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
+	"go-breeders/configuration"
 	"go-breeders/internal/driver"
-	"go-breeders/internal/repository"
 
 	"github.com/joho/godotenv"
 )
@@ -20,7 +20,7 @@ const port = ":4000"
 type application struct {
 	templateMap map[string]*template.Template
 	config      appConfig
-	DB          repository.Repository
+	App         *configuration.Application
 }
 
 type appConfig struct {
@@ -48,7 +48,8 @@ func main() {
 		log.Fatal(err)
 	}
 	defer conn.Close()
-	app.DB = repository.New(conn)
+
+	app.App = configuration.New(conn)
 
 	fmt.Println("Starting server on port", port)
 
