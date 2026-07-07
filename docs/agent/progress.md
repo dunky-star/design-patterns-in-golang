@@ -13,6 +13,7 @@ Design Patterns in Go — implementations of creational, structural, and behavio
 - Database connectivity via `internal/driver` and `.env` DSN
 - Repository pattern (`internal/repository`: interface, mysql + test implementations)
 - Singleton pattern (`configuration/`: single `Application` with `DB repository.Repository`)
+- Builder pattern (`pets/builder.go`, test page UI, `/api/dog-from-builder`, `/api/cat-from-builder`)
 
 ---
 
@@ -24,7 +25,7 @@ None currently.
 
 ## Backlog
 
-- Cat breeds list (still stub in go-breeders reference) - Builder Pattern & Fluent Interface
+- Cat breeds list (still stub in go-breeders reference)
 - Adapter Pattern
 - Decorator Pattern
 - Worker Pool Pattern

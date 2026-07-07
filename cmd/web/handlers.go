@@ -5,7 +5,7 @@ import (
 	"go-breeders/pets"
 	"net/http"
 
-	"github.com/dunky-star/go-json-xml-tool"
+	jsonxmltool "github.com/dunky-star/go-json-xml-tool"
 )
 
 func (app *application) ShowHome(w http.ResponseWriter, r *http.Request) {
@@ -60,4 +60,51 @@ func (app *application) GetAllDogBreedsJSON(w http.ResponseWriter, r *http.Reque
 	}
 
 	_ = k.WriteJSON(w, http.StatusOK, dogBreeds)
+}
+
+func (app *application) CreateDogWithBuilder(w http.ResponseWriter, r *http.Request) {
+	k := jsonxmltool.NewKit()
+	p, err := pets.NewPetBuilder().
+		SetSpecies("dog").
+		SetBreed("Labrador").
+		SetMinWeight(30).
+		SetMaxWeight(40).
+		SetWeight(35).
+		SetDescription("A friendly and outgoing dog").
+		SetLifeSpan(10).
+		SetGeographicOrigin("United States").
+		SetColor("Brown").
+		SetAge(5).
+		SetAgeEstimated(true).
+		Build()
+
+	if err != nil {
+		_ = k.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+	_ = k.WriteJSON(w, http.StatusOK, p)
+}
+
+// CreateCatWithBuilder creates a cat using a (fluent) builder pattern
+func (app *application) CreateCatWithBuilder(w http.ResponseWriter, r *http.Request) {
+	k := jsonxmltool.NewKit()
+
+	// create our dog using the builder pattern.
+	p, err := pets.NewPetBuilder().
+		SetSpecies("cat").
+		SetBreed("felis silvestris catus").
+		SetWeight(4).
+		SetDescription("A beautiful house cat.").
+		SetGeographicOrigin("Canada").
+		SetColor("Calico").
+		SetAge(1).
+		SetAgeEstimated(true).
+		Build()
+
+	if err != nil {
+		_ = k.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	_ = k.WriteJSON(w, http.StatusOK, p)
 }

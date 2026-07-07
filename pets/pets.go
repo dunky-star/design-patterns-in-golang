@@ -12,5 +12,5 @@ type Pet struct {
 	GeographicOrigin string `json:"geographic_origin", omitempty`
 	Color            string `json:"color", omitempty`
 	Age              int    `json:"age", omitempty`
-	AgeEstimated     int    `json:"age_estimated", omitempty`
+	AgeEstimated     bool   `json:"age_estimated", omitempty`
 }

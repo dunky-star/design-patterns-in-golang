@@ -7,14 +7,18 @@ type PetInterface interface {
 	SetBreed(breed string) *Pet
 	SetMinWeight(minWeight int) *Pet
 	SetMaxWeight(maxWeight int) *Pet
-	SetAverageWeight(averageWeight int) *Pet
 	SetWeight(weight int) *Pet
 	SetDescription(description string) *Pet
 	SetLifeSpan(lifeSpan int) *Pet
 	SetGeographicOrigin(geographicOrigin string) *Pet
 	SetColor(color string) *Pet
 	SetAge(age int) *Pet
-	SetAgeEstimated(ageEstimated int) *Pet
+	SetAgeEstimated(ageEstimated bool) *Pet
+	Build() (*Pet, error)
+}
+
+func NewPetBuilder() PetInterface {
+	return &Pet{}
 }
 
 func (p *Pet) SetSpecies(species string) *Pet {
@@ -34,11 +38,6 @@ func (p *Pet) SetMinWeight(minWeight int) *Pet {
 
 func (p *Pet) SetMaxWeight(maxWeight int) *Pet {
 	p.MaxWeight = maxWeight
-	return p
-}
-
-func (p *Pet) SetAverageWeight(averageWeight int) *Pet {
-	p.AverageWeight = averageWeight
 	return p
 }
 
@@ -72,7 +71,7 @@ func (p *Pet) SetAge(age int) *Pet {
 	return p
 }
 
-func (p *Pet) SetAgeEstimated(ageEstimated int) *Pet {
+func (p *Pet) SetAgeEstimated(ageEstimated bool) *Pet {
 	p.AgeEstimated = ageEstimated
 	return p
 }
