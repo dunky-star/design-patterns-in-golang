@@ -26,6 +26,8 @@ func (app *application) routes() http.Handler {
 
 	mux.HandleFunc("GET /api/dog-breeds", app.GetAllDogBreedsJSON)
 
+	mux.HandleFunc("GET /api/animal-from-abstract-factory/{species}/{breed}", app.AnimalFromAbstractFactory)
+
 	mux.HandleFunc("GET /", app.ShowHome)
 	mux.HandleFunc("GET /{page}", app.ShowPage)
 

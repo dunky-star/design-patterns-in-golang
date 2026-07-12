@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"go-breeders/adapters"
 	"go-breeders/configuration"
 	"go-breeders/internal/driver"
 
@@ -49,7 +50,10 @@ func main() {
 	}
 	defer conn.Close()
 
-	app.App = configuration.New(conn)
+	xmlBackend := &adapters.XMLBackend{}
+	xmlAdapter := &adapters.RemoteService{Remote: xmlBackend}
+
+	app.App = configuration.New(conn, xmlAdapter)
 
 	fmt.Println("Starting server on port", port)
 

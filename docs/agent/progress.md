@@ -15,6 +15,7 @@ Design Patterns in Go — implementations of creational, structural, and behavio
 - Singleton pattern (`configuration/`: single `Application` with `DB repository.Repository`)
 - Builder pattern (`pets/builder.go`, test page UI, `/api/dog-from-builder`, `/api/cat-from-builder`)
 - Adapter pattern (`adapters/adapters.go`: CatBreedsInterface, RemoteService, JSONBackend, XMLBackend)
+- Abstract Factory with breed support (`pets/abstract-factory.go`: `newPetWithBreed`, `NewPetWithBreedFromAbstractFactory`; stub route/handler)
 
 ---
 
@@ -28,6 +29,7 @@ None currently.
 
 - Cat breeds list (still stub in go-breeders reference)
 - Adapter pattern wiring in `cmd/web` (handler/routes — not added yet by request)
+- Abstract Factory handler completion + UI (`AnimalFromAbstractFactory`, test page)
 - Decorator Pattern
 - Worker Pool Pattern
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-breeders/pets"
 	"net/http"
+	"net/url"
 
 	jsonxmltool "github.com/dunky-star/go-json-xml-tool"
 )
@@ -107,4 +108,21 @@ func (app *application) CreateCatWithBuilder(w http.ResponseWriter, r *http.Requ
 	}
 
 	_ = k.WriteJSON(w, http.StatusOK, p)
+}
+
+func (app *application) AnimalFromAbstractFactory(w http.ResponseWriter, r *http.Request) {
+	// Setup toolbox
+
+	// Get species from URL itself.
+	species := r.PathValue("species")
+
+	// Get breed from the URL.
+	b := r.PathValue("breed")
+	breed, _ := url.QueryUnescape(b)
+
+	fmt.Println("Species:", species, "Breed:", breed)
+
+	// Create a pet from abstract factory
+
+	// Write the result as JSON.
 }
