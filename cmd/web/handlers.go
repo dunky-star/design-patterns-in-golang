@@ -112,6 +112,7 @@ func (app *application) CreateCatWithBuilder(w http.ResponseWriter, r *http.Requ
 
 func (app *application) AnimalFromAbstractFactory(w http.ResponseWriter, r *http.Request) {
 	// Setup toolbox
+	k := jsonxmltool.NewKit()
 
 	// Get species from URL itself.
 	species := r.PathValue("species")
@@ -120,9 +121,13 @@ func (app *application) AnimalFromAbstractFactory(w http.ResponseWriter, r *http
 	b := r.PathValue("breed")
 	breed, _ := url.QueryUnescape(b)
 
-	fmt.Println("Species:", species, "Breed:", breed)
-
 	// Create a pet from abstract factory
+	pet, err := pets.NewPetWithBreedFromAbstractFactory(species, breed)
+	if err != nil {
+		_ = k.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+	}
 
 	// Write the result as JSON.
+	_ = k.WriteJSON(w, http.StatusOK, pet)
 }
