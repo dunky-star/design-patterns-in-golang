@@ -77,3 +77,10 @@ type Pet struct {
 	Description string `json:"description"`
 	LifeSpan    int    `json:"life_span"`
 }
+
+type DogOfMonth struct {
+	ID    int    `json:"id"`
+	Dog   *Dog   `json:"dog"`
+	Video string `json:"video"`
+	Image string `json:"image"`
+}

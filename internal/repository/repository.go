@@ -11,6 +11,7 @@ import (
 type Repository interface {
 	AllDogBreeds() ([]*models.DogBreed, error)
 	GetBreedByName(b string) (*models.DogBreed, error)
+	GetDogOfMonthByID(id int) (*models.DogOfMonth, error)
 }
 
 // mysqlRepository is a simple wrapper for the *sql.DB type. This is

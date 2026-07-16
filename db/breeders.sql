@@ -422,6 +422,30 @@ LOCK TABLES `dogs` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `dog_of_month`
+--
+
+DROP TABLE IF EXISTS `dog_of_month`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `dog_of_month` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `image` varchar(512) NOT NULL,
+  `video` varchar(512) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `dog_of_month`
+--
+
+LOCK TABLES `dog_of_month` WRITE;
+/*!40000 ALTER TABLE `dog_of_month` DISABLE KEYS */;
+/*!40000 ALTER TABLE `dog_of_month` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `users`
 --
 
