@@ -16,6 +16,7 @@ Design Patterns in Go — implementations of creational, structural, and behavio
 - Builder pattern (`pets/builder.go`, test page UI, `/api/dog-from-builder`, `/api/cat-from-builder`)
 - Adapter pattern (`adapters/adapters.go`: CatBreedsInterface, RemoteService, JSONBackend, XMLBackend)
 - Abstract Factory with breed support (`pets/abstract-factory.go`, completed handler + Abstract Factory II UI)
+- Dog of the Month decorator (`DogOfMonth` model/repository, handler, route, template)
 
 ---
 
@@ -29,10 +30,9 @@ None currently.
 
 - Cat breeds list (still stub in go-breeders reference)
 - Adapter pattern wiring in `cmd/web` (handler/routes — not added yet by request)
-- Decorator Pattern
 - Worker Pool Pattern
 
 ---
 
-**Last Updated:** July 12, 2026  
-**Status:** Adapter package added (adapters/ only)
+**Last Updated:** July 18, 2026  
+**Status:** Dog of the Month decorator implemented

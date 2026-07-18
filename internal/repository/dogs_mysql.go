@@ -90,7 +90,6 @@ func (m *mysqlRepository) GetDogOfMonthByID(id int) (*models.DogOfMonth, error) 
 	var dog models.DogOfMonth
 	err := row.Scan(
 		&dog.ID,
-		&dog.ID,
 		&dog.Video,
 		&dog.Image,
 	)

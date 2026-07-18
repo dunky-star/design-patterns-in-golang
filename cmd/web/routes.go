@@ -11,6 +11,8 @@ func (app *application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
+	mux.HandleFunc("GET /dog-of-month", app.DogOfMonth)
+
 	// display test page
 	mux.HandleFunc("GET /test-patterns", app.TestPatterns)
 
