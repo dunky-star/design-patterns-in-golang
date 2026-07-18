@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-breeders/models"
 	"go-breeders/pets"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -22,10 +23,28 @@ func (app *application) ShowPage(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) DogOfMonth(w http.ResponseWriter, r *http.Request) {
 	// Get the breed
-	breed, _ := app.App.DB.GetBreedByName("German Shepherd Dog")
+	breed, err := app.App.DB.GetBreedByName("German Shepherd Dog")
+	if err != nil || breed == nil {
+		if err != nil {
+			log.Printf("Error getting breed for dog of the month: %v", err)
+		}
+		app.render(w, "dog-of-month.page.gohtml", &templateData{Data: map[string]any{
+			"error": "Dog of the Month is not available right now.",
+		}})
+		return
+	}
 
 	// Get the dog of the month from database
-	dom, _ := app.App.DB.GetDogOfMonthByID(1)
+	dom, err := app.App.DB.GetDogOfMonthByID(1)
+	if err != nil || dom == nil {
+		if err != nil {
+			log.Printf("Error getting dog of the month: %v", err)
+		}
+		app.render(w, "dog-of-month.page.gohtml", &templateData{Data: map[string]any{
+			"error": "Dog of the Month is not available right now.",
+		}})
+		return
+	}
 
 	layout := "2006-01-02"
 	dob, _ := time.Parse(layout, "2023-11-01")
