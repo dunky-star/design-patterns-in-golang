@@ -1,4 +1,7 @@
-.PHONY: help run migrateup migratedown migrateforce
+PACKAGES ?= ./...
+TEST_FLAGS ?=
+
+.PHONY: help run test test-race test-cover migrateup migratedown migrateforce
 
 help: ## Show available commands
 	@echo "Available targets:"
@@ -7,6 +10,15 @@ help: ## Show available commands
 
 run: ## Run the web application with local media directories
 	go run ./cmd/web -media-input ./input -media-output ./output
+
+test: ## Run local tests (override with TEST_FLAGS or PACKAGES)
+	go test $(TEST_FLAGS) $(PACKAGES)
+
+test-race: ## Run tests with the race detector
+	go test -race -vet=off $(TEST_FLAGS) $(PACKAGES)
+
+test-cover: ## Run tests with coverage reporting
+	go test -cover $(TEST_FLAGS) $(PACKAGES)
 
 migrateup: ## Run database migrations up (loads .env if present)
 	@[ -f .env ] && set -a && . ./.env && set +a; \

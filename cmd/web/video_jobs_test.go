@@ -1,22 +1,47 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"go-breeders/streamer"
+	"go-breeders/internal/video"
+	"go-breeders/models"
 )
+
+type stubVideoProcessingService struct {
+	jobs       []*models.VideoJob
+	processErr error
+}
+
+func (s *stubVideoProcessingService) Jobs() ([]*models.VideoJob, error) {
+	return s.jobs, nil
+}
+
+func (s *stubVideoProcessingService) Process(
+	_ context.Context,
+	_ int,
+	_ video.ProcessOptions,
+) (*models.VideoJob, error) {
+	if s.processErr != nil {
+		return nil, s.processErr
+	}
+	return &models.VideoJob{ID: 1, Status: "processing"}, nil
+}
 
 func TestApplication_GetVideoJobs(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/api/video-jobs", nil)
 	rr := httptest.NewRecorder()
+	app := application{
+		videoService: &stubVideoProcessingService{
+			jobs: []*models.VideoJob{{ID: 1, Status: "pending"}},
+		},
+	}
 
-	testApp.GetVideoJobs(rr, req)
+	app.GetVideoJobs(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("wrong response code; got %d, wanted %d", rr.Code, http.StatusOK)
@@ -47,9 +72,9 @@ func TestApplication_ProcessVideoJobRejectsInvalidEncoding(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	app := application{
-		videoQueue:   make(chan streamer.VideoProcessingJob, 1),
-		videoResults: make(chan streamer.ProcessingMessage, 1),
-		videoStream:  streamer.New(make(chan streamer.VideoProcessingJob, 1), 1),
+		videoService: &stubVideoProcessingService{
+			processErr: video.ErrInvalidOptions,
+		},
 	}
 	app.ProcessVideoJob(rr, req)
 
@@ -62,12 +87,13 @@ func TestApplication_ProcessVideoJobRejectsInvalidEncoding(t *testing.T) {
 	}
 }
 
-func TestVideoOptionsFromRequest(t *testing.T) {
+func TestVideoProcessOptionsFromRequest(t *testing.T) {
 	tests := []struct {
-		name      string
-		form      url.Values
-		wantType  string
-		wantError bool
+		name                string
+		form                url.Values
+		wantType            string
+		wantSegmentDuration int
+		wantError           bool
 	}{
 		{
 			name:     "mp4",
@@ -83,21 +109,14 @@ func TestVideoOptionsFromRequest(t *testing.T) {
 				"max_rate_720p":    {"2800k"},
 				"max_rate_480p":    {"1400k"},
 			},
-			wantType: "hls",
+			wantType:            "hls",
+			wantSegmentDuration: 10,
 		},
 		{
-			name:      "invalid encoding",
-			form:      url.Values{"encoding": {"avi"}},
-			wantError: true,
-		},
-		{
-			name: "invalid HLS bitrate",
+			name: "invalid HLS segment duration",
 			form: url.Values{
 				"encoding":         {"hls"},
-				"segment_duration": {"10"},
-				"max_rate_1080p":   {"invalid"},
-				"max_rate_720p":    {"2800k"},
-				"max_rate_480p":    {"1400k"},
+				"segment_duration": {"invalid"},
 			},
 			wantError: true,
 		},
@@ -115,37 +134,20 @@ func TestVideoOptionsFromRequest(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			encodingType, _, err := videoOptionsFromRequest(req)
+			options, err := videoProcessOptionsFromRequest(req)
 			if (err != nil) != tt.wantError {
 				t.Fatalf("error = %v, wantError %t", err, tt.wantError)
 			}
-			if encodingType != tt.wantType {
-				t.Errorf("encoding type = %q, want %q", encodingType, tt.wantType)
+			if options.EncodingType != tt.wantType {
+				t.Errorf("encoding type = %q, want %q", options.EncodingType, tt.wantType)
+			}
+			if options.SegmentDuration != tt.wantSegmentDuration {
+				t.Errorf(
+					"segment duration = %d, want %d",
+					options.SegmentDuration,
+					tt.wantSegmentDuration,
+				)
 			}
 		})
-	}
-}
-
-func TestResolveMediaPath(t *testing.T) {
-	root := t.TempDir()
-	inputPath := filepath.Join(root, "puppy.mp4")
-	if err := os.WriteFile(inputPath, []byte("video"), 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	resolved, err := resolveMediaPath(root, "puppy.mp4")
-	if err != nil {
-		t.Fatal(err)
-	}
-	expectedPath, err := filepath.EvalSymlinks(inputPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if resolved != expectedPath {
-		t.Errorf("resolved path = %q, want %q", resolved, expectedPath)
-	}
-
-	if _, err := resolveMediaPath(root, "../secret.mp4"); err == nil {
-		t.Error("expected traversal media key to be rejected")
 	}
 }

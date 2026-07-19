@@ -12,7 +12,7 @@ import (
 	"go-breeders/adapters"
 	"go-breeders/configuration"
 	"go-breeders/internal/driver"
-	"go-breeders/streamer"
+	"go-breeders/internal/video"
 
 	"github.com/joho/godotenv"
 )
@@ -23,9 +23,7 @@ type application struct {
 	templateMap  map[string]*template.Template
 	config       appConfig
 	App          *configuration.Application
-	videoQueue   chan streamer.VideoProcessingJob
-	videoStream  *streamer.VideoDispatcher
-	videoResults chan streamer.ProcessingMessage
+	videoService videoProcessingService
 }
 
 type appConfig struct {
@@ -40,19 +38,14 @@ type appConfig struct {
 }
 
 func main() {
-	const numWorkers = 4
 
-	videoQueue := make(chan streamer.VideoProcessingJob, numWorkers)
-	defer close(videoQueue)
-	videoResults := make(chan streamer.ProcessingMessage, numWorkers)
+	const numWorkers = 4
 
 	// Load .env file into environment (no-op if file missing)
 	_ = godotenv.Load()
 
 	app := application{
-		templateMap:  make(map[string]*template.Template),
-		videoQueue:   videoQueue,
-		videoResults: videoResults,
+		templateMap: make(map[string]*template.Template),
 	}
 
 	flag.BoolVar(&app.config.useCache, "cache", false, "Use template cache")
@@ -63,7 +56,6 @@ func main() {
 
 	conn, err := driver.OpenDB(app.config.db.dsn)
 	if err != nil {
-		log.Println(err)
 		log.Fatal(err)
 	}
 	defer conn.Close()
@@ -72,15 +64,20 @@ func main() {
 	xmlAdapter := &adapters.RemoteService{Remote: xmlBackend}
 
 	app.App = configuration.New(conn, xmlAdapter)
-	if err := app.App.DB.ResetProcessingVideoJobs(); err != nil {
-		log.Println(err)
+
+	videoService, err := video.New(
+		app.App.DB,
+		numWorkers,
+		app.config.media.inputDir,
+		app.config.media.outputDir,
+	)
+	if err != nil {
 		log.Fatal(err)
 	}
-
-	wp := streamer.New(videoQueue, numWorkers)
-	wp.Run()
-	app.videoStream = wp
-	go app.listenToVideoResults()
+	if err := videoService.Start(); err != nil {
+		log.Fatal(err)
+	}
+	app.videoService = videoService
 
 	fmt.Println("Starting server on port", port)
 
