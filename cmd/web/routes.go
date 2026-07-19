@@ -14,6 +14,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /dog-of-month", app.DogOfMonth)
 	mux.HandleFunc("GET /video-processing", app.VideoProcessing)
 	mux.HandleFunc("GET /api/video-jobs", app.GetVideoJobs)
+	mux.HandleFunc("GET /api/video-jobs/{id}/output/{file...}", app.GetProcessedVideo)
 	mux.HandleFunc("POST /api/video-jobs/{id}/process", app.ProcessVideoJob)
 
 	// display test page

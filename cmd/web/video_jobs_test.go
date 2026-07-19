@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -15,10 +17,16 @@ import (
 type stubVideoProcessingService struct {
 	jobs       []*models.VideoJob
 	processErr error
+	outputPath string
+	outputErr  error
 }
 
 func (s *stubVideoProcessingService) Jobs() ([]*models.VideoJob, error) {
 	return s.jobs, nil
+}
+
+func (s *stubVideoProcessingService) OutputFile(_ int, _ string) (string, error) {
+	return s.outputPath, s.outputErr
 }
 
 func (s *stubVideoProcessingService) Process(
@@ -61,6 +69,34 @@ func TestApplication_ProcessVideoJobUnavailable(t *testing.T) {
 			rr.Code,
 			http.StatusServiceUnavailable,
 		)
+	}
+}
+
+func TestApplication_GetProcessedVideo(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "processed.mp4")
+	if err := os.WriteFile(outputPath, []byte("processed video"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/api/video-jobs/1/output/processed.mp4",
+		nil,
+	)
+	req.SetPathValue("id", "1")
+	req.SetPathValue("file", "processed.mp4")
+	rr := httptest.NewRecorder()
+	app := application{
+		videoService: &stubVideoProcessingService{outputPath: outputPath},
+	}
+
+	app.GetProcessedVideo(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("wrong response code; got %d, wanted %d", rr.Code, http.StatusOK)
+	}
+	if rr.Body.String() != "processed video" {
+		t.Errorf("response body = %q, want processed video", rr.Body.String())
 	}
 }
 

@@ -91,6 +91,7 @@ type VideoJob struct {
 	EncodingType    string    `json:"encoding_type"`
 	Status          string    `json:"status"`
 	OutputReference string    `json:"output_reference"`
+	OutputSize      int64     `json:"output_size"`
 	ErrorMessage    string    `json:"error_message"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`

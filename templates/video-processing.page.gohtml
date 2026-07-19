@@ -58,6 +58,7 @@
                             <th>Encoding</th>
                             <th>Status</th>
                             <th>Output</th>
+                            <th>Size</th>
                             <th>Error</th>
                             <th></th>
                         </tr>
@@ -65,17 +66,27 @@
                     <tbody id="video-jobs"></tbody>
                 </table>
             </div>
+
+            <h4 class="mt-5">Processed Videos</h4>
+            <hr>
+            <div id="processed-videos" class="row g-4">
+                <p class="text-muted">Completed videos will appear here.</p>
+            </div>
         </div>
     </div>
 </div>
 {{end}}
 
 {{define "js"}}
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <script>
 let encoding = document.getElementById("encoding");
 let hlsOptions = document.getElementById("hls-options");
 let videoJobs = document.getElementById("video-jobs");
 let videoProcessingError = document.getElementById("video-processing-error");
+let processedVideos = document.getElementById("processed-videos");
+let renderedOutputsSignature = "";
+let hlsPlayers = [];
 
 function showError(message) {
     videoProcessingError.textContent = message;
@@ -93,6 +104,102 @@ function addCell(row, value) {
     row.appendChild(cell);
 }
 
+function formatFileSize(bytes) {
+    if (!bytes) {
+        return "";
+    }
+
+    const units = ["B", "KB", "MB", "GB"];
+    let size = bytes;
+    let unit = 0;
+    while (size >= 1024 && unit < units.length - 1) {
+        size /= 1024;
+        unit++;
+    }
+
+    return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+}
+
+function processedVideoURL(job) {
+    let outputFile = job.output_reference.split("/").pop();
+    return `/api/video-jobs/${job.id}/output/${encodeURIComponent(outputFile)}`;
+}
+
+function renderProcessedVideos(jobs) {
+    let completedJobs = jobs.filter((job) =>
+        job.status === "completed" && job.output_reference
+    );
+    let signature = completedJobs
+        .map((job) => `${job.id}:${job.output_reference}:${job.output_size}`)
+        .join("|");
+
+    if (signature === renderedOutputsSignature) {
+        return;
+    }
+    renderedOutputsSignature = signature;
+    hlsPlayers.forEach((player) => player.destroy());
+    hlsPlayers = [];
+    processedVideos.replaceChildren();
+
+    if (completedJobs.length === 0) {
+        let message = document.createElement("p");
+        message.className = "text-muted";
+        message.textContent = "Completed videos will appear here.";
+        processedVideos.appendChild(message);
+        return;
+    }
+
+    completedJobs.forEach((job) => {
+        let column = document.createElement("div");
+        column.className = "col-lg-6";
+
+        let card = document.createElement("div");
+        card.className = "card h-100";
+
+        let player = document.createElement("video");
+        player.className = "card-img-top";
+        player.controls = true;
+        player.preload = "metadata";
+        let outputURL = processedVideoURL(job);
+        if (
+            job.encoding_type === "hls" &&
+            !player.canPlayType("application/vnd.apple.mpegurl") &&
+            window.Hls &&
+            Hls.isSupported()
+        ) {
+            let hls = new Hls();
+            hls.loadSource(outputURL);
+            hls.attachMedia(player);
+            hlsPlayers.push(hls);
+        } else {
+            player.src = outputURL;
+        }
+
+        let body = document.createElement("div");
+        body.className = "card-body";
+
+        let title = document.createElement("h5");
+        title.className = "card-title";
+        title.textContent = `Video ${job.id}`;
+
+        let details = document.createElement("p");
+        details.className = "card-text text-muted";
+        details.textContent = `${job.input_media_key} · ${job.encoding_type.toUpperCase()} · ${formatFileSize(job.output_size)}`;
+
+        let link = document.createElement("a");
+        link.className = "btn btn-sm btn-outline-primary";
+        link.href = outputURL;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = "Open video";
+
+        body.append(title, details, link);
+        card.append(player, body);
+        column.appendChild(card);
+        processedVideos.appendChild(column);
+    });
+}
+
 function renderJobs(jobs) {
     videoJobs.replaceChildren();
 
@@ -103,6 +210,7 @@ function renderJobs(jobs) {
         addCell(row, job.encoding_type);
         addCell(row, job.status);
         addCell(row, job.output_reference);
+        addCell(row, formatFileSize(job.output_size));
         addCell(row, job.error_message);
 
         let actionCell = document.createElement("td");
@@ -117,6 +225,8 @@ function renderJobs(jobs) {
 
         videoJobs.appendChild(row);
     })
+
+    renderProcessedVideos(jobs);
 }
 
 async function loadJobs() {

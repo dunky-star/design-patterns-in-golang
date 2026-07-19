@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"go-breeders/models"
@@ -84,6 +85,103 @@ func TestServiceProcessQueuesClaimedJob(t *testing.T) {
 	}
 	if queuedJob.Video.EncodingType != "mp4" {
 		t.Errorf("queued encoding = %q, want mp4", queuedJob.Video.EncodingType)
+	}
+}
+
+func TestServiceOutputFile(t *testing.T) {
+	inputDir := t.TempDir()
+	outputDir := t.TempDir()
+	jobOutputDir := filepath.Join(outputDir, "mp4", "job-1")
+	if err := os.MkdirAll(jobOutputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedPath := filepath.Join(jobOutputDir, "processed.mp4")
+	if err := os.WriteFile(expectedPath, []byte("video"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	repository := &stubRepository{
+		job: &models.VideoJob{
+			ID:              1,
+			EncodingType:    "mp4",
+			Status:          "completed",
+			OutputReference: "mp4/job-1/processed.mp4",
+		},
+	}
+	service, err := New(repository, 1, inputDir, outputDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outputPath, err := service.OutputFile(1, "processed.mp4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedResolvedPath, err := filepath.EvalSymlinks(expectedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outputPath != expectedResolvedPath {
+		t.Errorf("output path = %q, want %q", outputPath, expectedResolvedPath)
+	}
+
+	jobs, err := service.Jobs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jobs[0].OutputSize != int64(len("video")) {
+		t.Errorf("output size = %d, want %d", jobs[0].OutputSize, len("video"))
+	}
+
+	if _, err := service.OutputFile(1, "../secret.mp4"); !errors.Is(err, ErrOutputUnavailable) {
+		t.Errorf("traversal error = %v, want ErrOutputUnavailable", err)
+	}
+}
+
+func TestServiceJobsIncludesHLSPackageSize(t *testing.T) {
+	inputDir := t.TempDir()
+	outputDir := t.TempDir()
+	jobOutputDir := filepath.Join(outputDir, "hls", "job-1")
+	if err := os.MkdirAll(jobOutputDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	files := map[string]string{
+		"stream.m3u8":        "master",
+		"stream-720p.m3u8":   "variant",
+		"stream-720p0.ts":    "segment",
+		"previous-output.ts": "ignored",
+	}
+	var expectedSize int64
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(jobOutputDir, name), []byte(content), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if strings.HasPrefix(name, "stream") {
+			expectedSize += int64(len(content))
+		}
+	}
+
+	repository := &stubRepository{
+		job: &models.VideoJob{
+			ID:              1,
+			EncodingType:    "hls",
+			Status:          "completed",
+			OutputReference: "hls/job-1/stream.m3u8",
+		},
+	}
+	service, err := New(repository, 1, inputDir, outputDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	jobs, err := service.Jobs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jobs[0].OutputSize != expectedSize {
+		t.Errorf("HLS output size = %d, want %d", jobs[0].OutputSize, expectedSize)
 	}
 }
 

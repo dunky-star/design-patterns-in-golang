@@ -11,7 +11,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	jsonxmltool "github.com/dunky-star/go-json-xml-tool"
@@ -19,6 +21,7 @@ import (
 
 type videoProcessingService interface {
 	Jobs() ([]*models.VideoJob, error)
+	OutputFile(int, string) (string, error)
 	Process(context.Context, int, video.ProcessOptions) (*models.VideoJob, error)
 }
 
@@ -217,6 +220,40 @@ func (app *application) GetVideoJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = k.WriteJSON(w, http.StatusOK, jobs)
+}
+
+func (app *application) GetProcessedVideo(w http.ResponseWriter, r *http.Request) {
+	if app.videoService == nil {
+		http.Error(w, "Video processing service is not available", http.StatusServiceUnavailable)
+		return
+	}
+
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id < 1 {
+		http.Error(w, "Invalid video job ID", http.StatusBadRequest)
+		return
+	}
+
+	outputPath, err := app.videoService.OutputFile(id, r.PathValue("file"))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, video.ErrOutputUnavailable) {
+			http.NotFound(w, r)
+			return
+		}
+
+		log.Printf("Error loading output for video job %d: %v", id, err)
+		http.Error(w, "Unable to load processed video", http.StatusInternalServerError)
+		return
+	}
+
+	switch strings.ToLower(filepath.Ext(outputPath)) {
+	case ".m3u8":
+		w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+	case ".ts":
+		w.Header().Set("Content-Type", "video/mp2t")
+	}
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	http.ServeFile(w, r, outputPath)
 }
 
 func (app *application) ProcessVideoJob(w http.ResponseWriter, r *http.Request) {

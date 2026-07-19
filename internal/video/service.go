@@ -20,6 +20,7 @@ var (
 	ErrInvalidOptions    = errors.New("invalid video processing options")
 	ErrAlreadyProcessing = errors.New("video job is already processing")
 	ErrInputUnavailable  = errors.New("input media is not available")
+	ErrOutputUnavailable = errors.New("processed video is not available")
 )
 
 var bitratePattern = regexp.MustCompile(`^[1-9][0-9]*[kKmM]?$`)
@@ -93,7 +94,118 @@ func (s *Service) Start() error {
 }
 
 func (s *Service) Jobs() ([]*models.VideoJob, error) {
-	return s.repository.AllVideoJobs()
+	jobs, err := s.repository.AllVideoJobs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, job := range jobs {
+		if job.Status != "completed" || job.OutputReference == "" {
+			continue
+		}
+
+		size, err := s.outputSize(job)
+		if err == nil {
+			job.OutputSize = size
+		}
+	}
+
+	return jobs, nil
+}
+
+// OutputFile returns a completed job's requested output file after ensuring it
+// remains inside that job's output directory.
+func (s *Service) OutputFile(id int, name string) (string, error) {
+	if id < 1 || name == "" {
+		return "", ErrOutputUnavailable
+	}
+
+	job, err := s.repository.GetVideoJobByID(id)
+	if err != nil {
+		return "", err
+	}
+	if job.Status != "completed" || job.OutputReference == "" {
+		return "", ErrOutputUnavailable
+	}
+
+	jobOutputDir, _, err := s.jobOutput(job)
+	if err != nil {
+		return "", err
+	}
+	outputPath, err := resolveMediaPath(jobOutputDir, name)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrOutputUnavailable, err)
+	}
+
+	return outputPath, nil
+}
+
+func (s *Service) outputSize(job *models.VideoJob) (int64, error) {
+	jobOutputDir, referenceName, err := s.jobOutput(job)
+	if err != nil {
+		return 0, err
+	}
+
+	if job.EncodingType != "hls" {
+		outputPath, err := resolveMediaPath(jobOutputDir, referenceName)
+		if err != nil {
+			return 0, err
+		}
+		info, err := os.Stat(outputPath)
+		if err != nil {
+			return 0, err
+		}
+		return info.Size(), nil
+	}
+
+	baseName := strings.TrimSuffix(referenceName, filepath.Ext(referenceName))
+	entries, err := os.ReadDir(jobOutputDir)
+	if err != nil {
+		return 0, err
+	}
+
+	var size int64
+	for _, entry := range entries {
+		if entry.Name() != referenceName && !strings.HasPrefix(entry.Name(), baseName+"-") {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			return 0, err
+		}
+		if info.Mode().IsRegular() {
+			size += info.Size()
+		}
+	}
+	if size == 0 {
+		return 0, ErrOutputUnavailable
+	}
+
+	return size, nil
+}
+
+func (s *Service) jobOutput(job *models.VideoJob) (string, string, error) {
+	if job.EncodingType != "mp4" && job.EncodingType != "hls" {
+		return "", "", ErrOutputUnavailable
+	}
+
+	jobReferenceRoot := filepath.ToSlash(filepath.Join(
+		job.EncodingType,
+		fmt.Sprintf("job-%d", job.ID),
+	))
+	cleanReference := filepath.ToSlash(filepath.Clean(job.OutputReference))
+	if !strings.HasPrefix(cleanReference, jobReferenceRoot+"/") {
+		return "", "", ErrOutputUnavailable
+	}
+
+	referenceName := strings.TrimPrefix(cleanReference, jobReferenceRoot+"/")
+	if referenceName == "" || strings.Contains(referenceName, "/") {
+		return "", "", ErrOutputUnavailable
+	}
+
+	jobOutputDir := filepath.Join(s.outputDir, filepath.FromSlash(jobReferenceRoot))
+	return jobOutputDir, referenceName, nil
 }
 
 func (s *Service) Process(ctx context.Context, id int, options ProcessOptions) (*models.VideoJob, error) {
