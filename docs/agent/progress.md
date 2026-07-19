@@ -18,7 +18,7 @@ Design Patterns in Go — implementations of creational, structural, and behavio
 - Abstract Factory with breed support (`pets/abstract-factory.go`, completed handler + Abstract Factory II UI)
 - Dog of the Month decorator (`DogOfMonth` model/repository, handler, route, template)
 - Worker Pool pattern (`streamer/`: dispatcher, workers, MP4/HLS encoders; `internal/video`: job orchestration, lifecycle, secure media resolution; Video Converter UI)
-- GitHub Actions test workflow and local Makefile targets (standard, race-enabled, and coverage tests)
+- GitHub Actions workflow (dependency verification, vet, staticcheck, race-enabled tests) and local Makefile test targets
 
 ---
 
