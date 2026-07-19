@@ -12,6 +12,7 @@ import (
 	"go-breeders/adapters"
 	"go-breeders/configuration"
 	"go-breeders/internal/driver"
+	"go-breeders/streamer"
 
 	"github.com/joho/godotenv"
 )
@@ -22,6 +23,7 @@ type application struct {
 	templateMap map[string]*template.Template
 	config      appConfig
 	App         *configuration.Application
+	videoQueue  chan streamer.VideoProcessingJob
 }
 
 type appConfig struct {
@@ -32,11 +34,17 @@ type appConfig struct {
 }
 
 func main() {
+	const numWorkers = 4
+
+	videoQueue := make(chan streamer.VideoProcessingJob, numWorkers)
+	defer close(videoQueue)
+
 	// Load .env file into environment (no-op if file missing)
 	_ = godotenv.Load()
 
 	app := application{
 		templateMap: make(map[string]*template.Template),
+		videoQueue:  videoQueue,
 	}
 
 	flag.BoolVar(&app.config.useCache, "cache", false, "Use template cache")
@@ -54,6 +62,9 @@ func main() {
 	xmlAdapter := &adapters.RemoteService{Remote: xmlBackend}
 
 	app.App = configuration.New(conn, xmlAdapter)
+
+	wp := streamer.New(videoQueue, numWorkers)
+	wp.Run()
 
 	fmt.Println("Starting server on port", port)
 
