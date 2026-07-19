@@ -58,7 +58,6 @@
                             <th>Encoding</th>
                             <th>Status</th>
                             <th>Output</th>
-                            <th>Size</th>
                             <th>Error</th>
                             <th></th>
                         </tr>
@@ -125,12 +124,18 @@ function processedVideoURL(job) {
     return `/api/video-jobs/${job.id}/output/${encodeURIComponent(outputFile)}`;
 }
 
+function processedOutputURL(job, fileName) {
+    return `/api/video-jobs/${job.id}/output/${encodeURIComponent(fileName)}`;
+}
+
 function renderProcessedVideos(jobs) {
     let completedJobs = jobs.filter((job) =>
         job.status === "completed" && job.output_reference
     );
     let signature = completedJobs
-        .map((job) => `${job.id}:${job.output_reference}:${job.output_size}`)
+        .map((job) =>
+            `${job.id}:${job.output_reference}:${JSON.stringify(job.output_files || [])}`
+        )
         .join("|");
 
     if (signature === renderedOutputsSignature) {
@@ -183,8 +188,32 @@ function renderProcessedVideos(jobs) {
         title.textContent = `Video ${job.id}`;
 
         let details = document.createElement("p");
-        details.className = "card-text text-muted";
-        details.textContent = `${job.input_media_key} · ${job.encoding_type.toUpperCase()} · ${formatFileSize(job.output_size)}`;
+        details.className = "card-text text-muted mb-1";
+        details.textContent = `${job.input_media_key} · ${job.encoding_type.toUpperCase()}`;
+
+        let filesHeading = document.createElement("h6");
+        filesHeading.className = "mt-3";
+        filesHeading.textContent = "Video files";
+
+        let files = document.createElement("ul");
+        files.className = "list-group list-group-flush mb-3";
+        (job.output_files || []).forEach((file) => {
+            let item = document.createElement("li");
+            item.className = "list-group-item px-0 d-flex justify-content-between gap-3";
+
+            let fileLink = document.createElement("a");
+            fileLink.href = processedOutputURL(job, file.name);
+            fileLink.target = "_blank";
+            fileLink.rel = "noopener";
+            fileLink.textContent = file.name;
+
+            let fileSize = document.createElement("span");
+            fileSize.className = "text-nowrap text-muted";
+            fileSize.textContent = formatFileSize(file.size) || "Unavailable";
+
+            item.append(fileLink, fileSize);
+            files.appendChild(item);
+        });
 
         let link = document.createElement("a");
         link.className = "btn btn-sm btn-outline-primary";
@@ -193,7 +222,7 @@ function renderProcessedVideos(jobs) {
         link.rel = "noopener";
         link.textContent = "Open video";
 
-        body.append(title, details, link);
+        body.append(title, details, filesHeading, files, link);
         card.append(player, body);
         column.appendChild(card);
         processedVideos.appendChild(column);
@@ -210,7 +239,6 @@ function renderJobs(jobs) {
         addCell(row, job.encoding_type);
         addCell(row, job.status);
         addCell(row, job.output_reference);
-        addCell(row, formatFileSize(job.output_size));
         addCell(row, job.error_message);
 
         let actionCell = document.createElement("td");

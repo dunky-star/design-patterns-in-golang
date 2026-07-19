@@ -86,13 +86,18 @@ type DogOfMonth struct {
 }
 
 type VideoJob struct {
-	ID              int       `json:"id"`
-	InputMediaKey   string    `json:"input_media_key"`
-	EncodingType    string    `json:"encoding_type"`
-	Status          string    `json:"status"`
-	OutputReference string    `json:"output_reference"`
-	OutputSize      int64     `json:"output_size"`
-	ErrorMessage    string    `json:"error_message"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID              int               `json:"id"`
+	InputMediaKey   string            `json:"input_media_key"`
+	EncodingType    string            `json:"encoding_type"`
+	Status          string            `json:"status"`
+	OutputReference string            `json:"output_reference"`
+	OutputFiles     []VideoOutputFile `json:"output_files,omitempty"`
+	ErrorMessage    string            `json:"error_message"`
+	CreatedAt       time.Time         `json:"created_at"`
+	UpdatedAt       time.Time         `json:"updated_at"`
+}
+
+type VideoOutputFile struct {
+	Name string `json:"name"`
+	Size int64  `json:"size"`
 }

@@ -104,9 +104,9 @@ func (s *Service) Jobs() ([]*models.VideoJob, error) {
 			continue
 		}
 
-		size, err := s.outputSize(job)
+		files, err := s.outputFiles(job)
 		if err == nil {
-			job.OutputSize = size
+			job.OutputFiles = files
 		}
 	}
 
@@ -140,49 +140,56 @@ func (s *Service) OutputFile(id int, name string) (string, error) {
 	return outputPath, nil
 }
 
-func (s *Service) outputSize(job *models.VideoJob) (int64, error) {
+func (s *Service) outputFiles(job *models.VideoJob) ([]models.VideoOutputFile, error) {
 	jobOutputDir, referenceName, err := s.jobOutput(job)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if job.EncodingType != "hls" {
 		outputPath, err := resolveMediaPath(jobOutputDir, referenceName)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 		info, err := os.Stat(outputPath)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
-		return info.Size(), nil
+		return []models.VideoOutputFile{{
+			Name: referenceName,
+			Size: info.Size(),
+		}}, nil
 	}
 
 	baseName := strings.TrimSuffix(referenceName, filepath.Ext(referenceName))
 	entries, err := os.ReadDir(jobOutputDir)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	var size int64
+	var files []models.VideoOutputFile
 	for _, entry := range entries {
-		if entry.Name() != referenceName && !strings.HasPrefix(entry.Name(), baseName+"-") {
+		if filepath.Ext(entry.Name()) != ".ts" ||
+			!strings.HasPrefix(entry.Name(), baseName+"-") {
 			continue
 		}
 
 		info, err := entry.Info()
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 		if info.Mode().IsRegular() {
-			size += info.Size()
+			files = append(files, models.VideoOutputFile{
+				Name: entry.Name(),
+				Size: info.Size(),
+			})
 		}
 	}
-	if size == 0 {
-		return 0, ErrOutputUnavailable
+	if len(files) == 0 {
+		return nil, ErrOutputUnavailable
 	}
 
-	return size, nil
+	return files, nil
 }
 
 func (s *Service) jobOutput(job *models.VideoJob) (string, string, error) {

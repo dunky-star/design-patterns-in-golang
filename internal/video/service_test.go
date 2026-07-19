@@ -130,8 +130,14 @@ func TestServiceOutputFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if jobs[0].OutputSize != int64(len("video")) {
-		t.Errorf("output size = %d, want %d", jobs[0].OutputSize, len("video"))
+	if len(jobs[0].OutputFiles) != 1 {
+		t.Fatalf("output file count = %d, want 1", len(jobs[0].OutputFiles))
+	}
+	if jobs[0].OutputFiles[0].Name != "processed.mp4" {
+		t.Errorf("output file name = %q, want processed.mp4", jobs[0].OutputFiles[0].Name)
+	}
+	if jobs[0].OutputFiles[0].Size != int64(len("video")) {
+		t.Errorf("output file size = %d, want %d", jobs[0].OutputFiles[0].Size, len("video"))
 	}
 
 	if _, err := service.OutputFile(1, "../secret.mp4"); !errors.Is(err, ErrOutputUnavailable) {
@@ -139,7 +145,7 @@ func TestServiceOutputFile(t *testing.T) {
 	}
 }
 
-func TestServiceJobsIncludesHLSPackageSize(t *testing.T) {
+func TestServiceJobsIncludesEachHLSVideoFileSize(t *testing.T) {
 	inputDir := t.TempDir()
 	outputDir := t.TempDir()
 	jobOutputDir := filepath.Join(outputDir, "hls", "job-1")
@@ -153,13 +159,13 @@ func TestServiceJobsIncludesHLSPackageSize(t *testing.T) {
 		"stream-720p0.ts":    "segment",
 		"previous-output.ts": "ignored",
 	}
-	var expectedSize int64
+	expectedFiles := make(map[string]int64)
 	for name, content := range files {
 		if err := os.WriteFile(filepath.Join(jobOutputDir, name), []byte(content), 0600); err != nil {
 			t.Fatal(err)
 		}
-		if strings.HasPrefix(name, "stream") {
-			expectedSize += int64(len(content))
+		if strings.HasPrefix(name, "stream-") && filepath.Ext(name) == ".ts" {
+			expectedFiles[name] = int64(len(content))
 		}
 	}
 
@@ -180,8 +186,22 @@ func TestServiceJobsIncludesHLSPackageSize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if jobs[0].OutputSize != expectedSize {
-		t.Errorf("HLS output size = %d, want %d", jobs[0].OutputSize, expectedSize)
+	if len(jobs[0].OutputFiles) != len(expectedFiles) {
+		t.Fatalf(
+			"HLS output file count = %d, want %d",
+			len(jobs[0].OutputFiles),
+			len(expectedFiles),
+		)
+	}
+	for _, file := range jobs[0].OutputFiles {
+		if file.Size != expectedFiles[file.Name] {
+			t.Errorf(
+				"HLS file %q size = %d, want %d",
+				file.Name,
+				file.Size,
+				expectedFiles[file.Name],
+			)
+		}
 	}
 }
 
