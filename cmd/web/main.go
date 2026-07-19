@@ -24,6 +24,7 @@ type application struct {
 	config      appConfig
 	App         *configuration.Application
 	videoQueue  chan streamer.VideoProcessingJob
+	videoStream *streamer.VideoDispatcher
 }
 
 type appConfig struct {
@@ -65,6 +66,7 @@ func main() {
 
 	wp := streamer.New(videoQueue, numWorkers)
 	wp.Run()
+	app.videoStream = wp
 
 	fmt.Println("Starting server on port", port)
 
