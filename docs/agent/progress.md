@@ -17,7 +17,7 @@ Design Patterns in Go — implementations of creational, structural, and behavio
 - Adapter pattern (`adapters/adapters.go`: CatBreedsInterface, RemoteService, JSONBackend, XMLBackend)
 - Abstract Factory with breed support (`pets/abstract-factory.go`, completed handler + Abstract Factory II UI)
 - Dog of the Month decorator (`DogOfMonth` model/repository, handler, route, template)
-- Worker Pool pattern (`streamer/`: dispatcher, workers, video jobs, MP4/HLS encoders; configurable page and processing endpoint)
+- Worker Pool pattern (`streamer/`: dispatcher, workers, MP4/HLS encoders; persistent `video_jobs` lifecycle, secure media resolution, polling UI)
 
 ---
 

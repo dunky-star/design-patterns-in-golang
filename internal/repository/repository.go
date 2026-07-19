@@ -12,6 +12,12 @@ type Repository interface {
 	AllDogBreeds() ([]*models.DogBreed, error)
 	GetBreedByName(b string) (*models.DogBreed, error)
 	GetDogOfMonthByID(id int) (*models.DogOfMonth, error)
+	AllVideoJobs() ([]*models.VideoJob, error)
+	GetVideoJobByID(id int) (*models.VideoJob, error)
+	ClaimVideoJob(id int, encodingType string) (bool, error)
+	CompleteVideoJob(id int, outputReference string) error
+	FailVideoJob(id int, errorMessage string) error
+	ResetProcessingVideoJobs() error
 }
 
 // mysqlRepository is a simple wrapper for the *sql.DB type. This is

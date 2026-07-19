@@ -446,6 +446,41 @@ LOCK TABLES `dog_of_month` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `video_jobs`
+--
+
+DROP TABLE IF EXISTS `video_jobs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `video_jobs` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `input_media_key` varchar(512) NOT NULL,
+  `encoding_type` varchar(20) NOT NULL DEFAULT 'mp4',
+  `status` varchar(20) NOT NULL DEFAULT 'pending',
+  `output_reference` varchar(512) DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `video_jobs`
+--
+
+LOCK TABLES `video_jobs` WRITE;
+/*!40000 ALTER TABLE `video_jobs` DISABLE KEYS */;
+INSERT INTO `video_jobs`
+  (`id`, `input_media_key`, `encoding_type`, `status`)
+VALUES
+  (1, 'puppy1.mp4', 'mp4', 'pending'),
+  (2, 'puppy2.mp4', 'mp4', 'pending');
+/*!40000 ALTER TABLE `video_jobs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `users`
 --
 

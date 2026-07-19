@@ -84,3 +84,14 @@ type DogOfMonth struct {
 	Video string `json:"video"`
 	Image string `json:"image"`
 }
+
+type VideoJob struct {
+	ID              int       `json:"id"`
+	InputMediaKey   string    `json:"input_media_key"`
+	EncodingType    string    `json:"encoding_type"`
+	Status          string    `json:"status"`
+	OutputReference string    `json:"output_reference"`
+	ErrorMessage    string    `json:"error_message"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}

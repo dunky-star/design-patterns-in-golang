@@ -1,0 +1,173 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h3 class="mt-4">Process Videos</h3>
+            <hr>
+            <p>
+                Process database-backed video jobs concurrently.
+            </p>
+
+            <form id="video-processing-form">
+                <div class="mb-3">
+                    <label for="encoding" class="form-label">Encoding</label>
+                    <select id="encoding" name="encoding" class="form-select">
+                        <option value="mp4">MP4</option>
+                        <option value="hls">HLS</option>
+                    </select>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input id="rename-output" name="rename_output" class="form-check-input" type="checkbox" value="true" checked>
+                    <label for="rename-output" class="form-check-label">Generate random output names</label>
+                </div>
+
+                <div id="hls-options" class="d-none">
+                    <div class="mb-3">
+                        <label for="segment-duration" class="form-label">Segment duration (seconds)</label>
+                        <input id="segment-duration" name="segment_duration" class="form-control" type="number" min="1" value="10">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="max-rate-1080p" class="form-label">1080p maximum bitrate</label>
+                        <input id="max-rate-1080p" name="max_rate_1080p" class="form-control" value="5000k">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="max-rate-720p" class="form-label">720p maximum bitrate</label>
+                        <input id="max-rate-720p" name="max_rate_720p" class="form-control" value="2800k">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="max-rate-480p" class="form-label">480p maximum bitrate</label>
+                        <input id="max-rate-480p" name="max_rate_480p" class="form-control" value="1400k">
+                    </div>
+                </div>
+            </form>
+
+            <div id="video-processing-error" class="alert alert-danger d-none" role="alert"></div>
+
+            <div class="table-responsive mt-3">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Input media</th>
+                            <th>Encoding</th>
+                            <th>Status</th>
+                            <th>Output</th>
+                            <th>Error</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="video-jobs"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "js"}}
+<script>
+let encoding = document.getElementById("encoding");
+let hlsOptions = document.getElementById("hls-options");
+let videoJobs = document.getElementById("video-jobs");
+let videoProcessingError = document.getElementById("video-processing-error");
+
+function showError(message) {
+    videoProcessingError.textContent = message;
+    videoProcessingError.classList.remove("d-none");
+}
+
+function clearError() {
+    videoProcessingError.textContent = "";
+    videoProcessingError.classList.add("d-none");
+}
+
+function addCell(row, value) {
+    let cell = document.createElement("td");
+    cell.textContent = value || "";
+    row.appendChild(cell);
+}
+
+function renderJobs(jobs) {
+    videoJobs.replaceChildren();
+
+    jobs.forEach((job) => {
+        let row = document.createElement("tr");
+        addCell(row, job.id);
+        addCell(row, job.input_media_key);
+        addCell(row, job.encoding_type);
+        addCell(row, job.status);
+        addCell(row, job.output_reference);
+        addCell(row, job.error_message);
+
+        let actionCell = document.createElement("td");
+        let button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn btn-sm btn-outline-secondary";
+        button.textContent = job.status === "processing" ? "Processing..." : "Process";
+        button.disabled = job.status === "processing";
+        button.addEventListener("click", () => processJob(job.id, button));
+        actionCell.appendChild(button);
+        row.appendChild(actionCell);
+
+        videoJobs.appendChild(row);
+    })
+}
+
+async function loadJobs() {
+    try {
+        let response = await fetch("/api/video-jobs");
+        let data = await response.json();
+        if (!response.ok || data.error) {
+            throw new Error(data.error || "Unable to load video jobs");
+        }
+        clearError();
+        renderJobs(data);
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+async function processJob(id, button) {
+    button.disabled = true;
+    button.textContent = "Queueing...";
+
+    let form = document.getElementById("video-processing-form");
+    let requestBody = new URLSearchParams(new FormData(form));
+
+    try {
+        let response = await fetch(`/api/video-jobs/${id}/process`, {
+            method: "post",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: requestBody,
+        });
+        let data = await response.json();
+        if (!response.ok || data.error) {
+            throw new Error(data.error || "Unable to queue video job");
+        }
+        clearError();
+        await loadJobs();
+    } catch (error) {
+        showError(error.message);
+        button.disabled = false;
+        button.textContent = "Process";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    encoding.addEventListener("change", function() {
+        hlsOptions.classList.toggle("d-none", encoding.value !== "hls");
+    });
+
+    loadJobs();
+    window.setInterval(loadJobs, 2000);
+});
+</script>
+{{end}}
